@@ -58,3 +58,30 @@ abline(mod, col="red")
 # segun nuestro modelo, hacemos:
 y_dosmil = predict(mod, data.frame(X_train = 2000))
 y_dosmil
+
+# REGRESION LINEAL MULTIPLE
+# intentar mejorar el Modelo, con una dimensión más: 
+# Para poder graficar en 3D, se creara una variable nueva que será la suma de los enlaces, comentarios e imágenes
+
+suma = filter_data$links + (filter_data$comments[is.na(filter_data$comments)] <- 0) + filter_data$images_videos
+
+dataX2 = data.frame(filter_data$wordcount, suma)
+colnames(dataX2) = c("Word Count", "Suma")
+
+XY_train = as.numeric(dataX2)
+z_train = filter_data$shares
+length(XY_train)
+
+word_count = filter_data$wordcount
+links = filter_data$links
+comments = filter_data$comments
+images_videos = filter_data$images_videos  
+
+mod2 = lm(z_train ~ word_count + links + comments + images_videos, data = filter_data)
+summary(mod2)
+
+y_dosmil = predict(mod, data.frame(X_train = 2000))
+y_dosmil
+
+z_Dosmil = predict(mod2, data.frame(word_count = 2000, links = 10, comments = 4, images_videos = 6))
+z_Dosmil                   

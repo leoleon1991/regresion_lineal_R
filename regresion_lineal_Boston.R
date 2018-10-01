@@ -20,7 +20,7 @@ data("Boston")
 # ptratio: ratio de alumnos/profesor por ciudad.
 # black: 1000(Bk - 0.63)^2 donde Bk es la proporción de gente de color por ciudad.
 # lstat: porcentaje de población en condición de pobreza.
-# medv: Valor mediano de las casas ocupadas por el dueño en unidades de $1000s.
+# medv: Valor medio de las casas ocupadas por el dueño en unidades de $1000s.
 
 # En primer lugar se realiza un análisis básico de los datos de forma numérica y gráfica.
 
@@ -39,7 +39,8 @@ multi.hist(x = Boston[,5:9], dcol = c("blue", "red"), dlty = c("dotted", "solid"
 multi.hist(x = Boston[,10:14], dcol = c("blue", "red"), dlty = c("dotted", "solid"), main = "")
 
 # REGRESION LINEAL SIMPLE
-# Se pretende predecir el valor de la vivienda en función del porcentaje de pobreza de la población. 
+# Se pretende predecir el valor de la vivienda en función del porcentaje de 
+# pobreza de la población, es decir Y = medv, X = lstat. 
 
 modelo_simple <- lm(data = Boston, formula = medv ~ lstat)
 
@@ -139,7 +140,8 @@ par(mfrow = c(1,1))
 # Todo ello reduce en gran medida la robustez de la estimación del error estándar
 # de los coeficientes de correlación estimados y con ello la del modelo es su conjunto.
 
-# Otra forma de identificar las observaciones que puedan ser outliers o puntos con alta influencia (leverage) es emplear las funciones rstudent() y hatvalues().
+# Otra forma de identificar las observaciones que puedan ser outliers o puntos con 
+# alta influencia (leverage) es emplear las funciones rstudent() y hatvalues().
 plot(x = modelo_simple$fitted.values, y = abs(rstudent(modelo_simple)),
      main = "Absolute studentized residuals vs predicted values", pch = 20,
      col = "grey30")
@@ -231,7 +233,7 @@ vif(modelo_multiple)
 # problemas y valores mayores o iguales a 10 se consideran muy problemáticos. 
 
 # INTERACCION ENTRE PREDICTORES
-#Una de las asunciones del modelo de regresión lineal múltiple es la de aditividad, 
+# Una de las asunciones del modelo de regresión lineal múltiple es la de aditividad, 
 # según la cual los efectos que causan sobre la variable respuesta Y variaciones 
 # en el predictor Xi son independientes del valor que tomen los otros predictores. 
 # Se conoce como efecto de interacción cuando el efecto de un predictor varía 
@@ -292,3 +294,68 @@ summary(modelo_interaccion)
 # (dentro de lo limitado ya que solo explica el 55% de variabilidad) es el 
 # modelo sin interacción. 
 
+# REGRESION POLINOMIAL: INCORPORAR NO-LINEALIDAD A LOS MODELOS LINEALES.
+# La Regresión Polinomial, aunque permite describir relaciones no lineales, 
+# se trata de un modelo lineal en el que se incorporan nuevos predictores 
+#elevando el valor de los ya existentes a diferentes potencias.
+
+# Cuando se intenta predecir el valor de la vivienda en función del estatus de la
+# población, el modelo lineal generado no se ajusta del todo bien debido a que las 
+# observaciones muestran una relación entre ambas variables con cierta curvatura.
+
+attach(Boston)
+plot(x = lstat, y = medv, main = "medv vs lstat", pch = 20, col = "grey30")
+abline(modelo_simple, lwd = 3, col = "red")
+
+# La curvatura descrita apunta a una posible relación cuadrática, por lo que un 
+# polinomio de segundo grado podría capturar mejor la relación entre las variables.
+
+# Se pueden generar modelos de regresión polinómica de diferentes formas:
+# - Identificando cada elemento del polinomio: 
+# modelo_pol2 <- lm(formula = medv ~ lstat + I(lstat^2), data = Boston) 
+# El uso de I() es necesario ya que el símbolo ^ tiene otra función dentro de las
+# formulas de R.
+
+# - Con la función poly(): lm(formula = medv ~ poly(lstat, 2), data = Boston)
+
+modelo_pol2 <- lm(formula = medv ~ poly(lstat, 2), data = Boston)
+summary(modelo_pol2)
+
+# El p-value próximo a 0 del predictor cuadrático de lstat indica que contribuye 
+# a mejorar el modelo.
+
+# Grafica del nuevo modelo
+plot(x = lstat, y = medv, main = "medv vs lstat cuadratico", pch = 20, col = "grey30")
+points(lstat, fitted(modelo_pol2), col = "red", pch = 20)
+
+# A la hora de comparar dos modelos se pueden evaluar sus R2. En este caso el 
+# modelo cuadrático es capaz de explicar un 64% de variabilidad frente al 54% del
+# modelo lineal.
+
+# Cuando se comparan dos modelos anidados (el modelo de menor tamaño está formado
+# por un subset de predictores del modelo mayor), se puede saber si el modelo 
+# mayor aporta una mejora sustancial estudiando si los coeficientes de regresión 
+# de los predictores adicionales son distintos a cero. 
+# El test estadístico empleado para hacerlo es el ANOVA.
+
+# Modelomenor:  y=β0+β1x1+...+βkxk10
+# Modelomayor:  y=β0+β1x1+...+βkxk+βk+1xk+1+...+βpxp
+
+# La hipótesis a contrastar es que todos los coeficientes de regresión de los 
+# predictores adicionales son igual a cero, frente a la hipótesis alternativa de 
+# que al menos uno es distinto.
+
+# H0:βk+1=...=βp
+
+# El estadístico empleado es:
+
+# F=(SEEModelomenor−SEEModelomayor)/(p−k)SEEModelomayor/(n−p−1)
+
+# Dado que un polinomio de orden n siempre va a estar anidado a uno de orden n+1,
+# se pueden comparar modelos polinómicos dentro un rango de grados haciendo 
+# comparaciones secuenciales.
+
+anova(modelo_simple, modelo_pol2)
+
+#  El p-value obtenido para el estadístico F confirma que el modelo cuadrático 
+# es superior.
